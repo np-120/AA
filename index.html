@@ -111,6 +111,38 @@
     }
     .volume svg { width: 18px; height: 18px; flex: none; }
     .status { min-height: 1.2em; margin: 14px 0 0; font-size: .82rem; color: var(--muted); }
+    .listener { margin: 6px 0 0; font-size: .8rem; color: var(--muted); }
+    .listener a { color: var(--accent); cursor: pointer; text-decoration: none; }
+
+    /* ---------- name popup ---------- */
+    .gate {
+      position: fixed; inset: 0; z-index: 10;
+      display: grid; place-items: center; padding: 20px;
+      background: rgba(8, 9, 12, .78);
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    }
+    .gate[hidden] { display: none; }
+    .gate form {
+      width: min(360px, 100%);
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 18px; padding: 26px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+      -webkit-user-select: text; user-select: text;
+    }
+    .gate h2 { margin: 0 0 6px; font-size: 1.15rem; }
+    .gate p { margin: 0 0 18px; color: var(--muted); font-size: .9rem; line-height: 1.45; }
+    .gate input {
+      width: 100%; padding: 12px 14px; border-radius: 10px;
+      border: 1px solid var(--track); background: var(--bg); color: var(--text);
+      font-size: 1rem; outline: none;
+    }
+    .gate input:focus { border-color: var(--accent); }
+    .gate .err { min-height: 1.1em; margin: 6px 0 0; color: #ef7b6b; font-size: .8rem; }
+    .gate button {
+      width: 100%; margin-top: 10px; padding: 12px; border-radius: 10px;
+      background: var(--accent); color: #1a1408; font-weight: 650; font-size: 1rem;
+    }
+    .gate .note { margin: 14px 0 0; font-size: .74rem; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -142,7 +174,20 @@
     </div>
 
     <p class="status" id="status">Loading audio…</p>
+    <p class="listener" id="listener" hidden></p>
   </main>
+
+  <!-- Name popup: the player stays locked until a name is entered -->
+  <div class="gate" id="gate" hidden>
+    <form id="gateForm" autocomplete="on" novalidate>
+      <h2>Before you listen</h2>
+      <p>Please enter your name to unlock the audio.</p>
+      <input id="nameInput" name="name" type="text" maxlength="60" placeholder="Your name" autocomplete="name" required>
+      <div class="err" id="nameErr"></div>
+      <button type="submit">Continue</button>
+      <p class="note">Your name, device type and listening times are recorded by the owner of this page.</p>
+    </form>
+  </div>
 
   <script src="player.js"></script>
 </body>

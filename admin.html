@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Listener report</title>
+  <style>
+    :root { --bg:#0f1115; --card:#181b22; --line:#252935; --text:#eef0f4; --muted:#8a90a0; --accent:#e8b04b; --track:#2c303b; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:14px; }
+    .wrap { max-width:1200px; margin:0 auto; padding:28px 20px 60px; }
+    header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; }
+    h1 { margin:0; font-size:1.35rem; }
+    h2 { font-size:1rem; margin:30px 0 12px; }
+    .sub { color:var(--muted); font-size:.85rem; margin-top:4px; }
+    button, .btn { border:1px solid var(--line); background:var(--card); color:var(--text); padding:9px 14px; border-radius:9px; cursor:pointer; font-size:.88rem; }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#1a1408; font-weight:650; }
+    input { padding:10px 12px; border-radius:9px; border:1px solid var(--track); background:var(--bg); color:var(--text); font-size:.92rem; outline:none; }
+    input:focus { border-color:var(--accent); }
+
+    .login { max-width:360px; margin:12vh auto; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px; }
+    .login input { width:100%; margin:14px 0 10px; }
+    .login button { width:100%; }
+    .err { color:#ef7b6b; font-size:.84rem; min-height:1.2em; margin-top:10px; }
+
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+    .card .label { color:var(--muted); font-size:.8rem; }
+    .card .value { font-size:1.6rem; font-weight:650; margin-top:6px; font-variant-numeric:tabular-nums; }
+
+    .tools { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:30px 0 12px; }
+    .tools h2 { margin:0 auto 0 0; }
+    .tools input { width:240px; }
+
+    .table-wrap { overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:14px; max-height:70vh; }
+    table { border-collapse:collapse; width:100%; }
+    th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+    th { position:sticky; top:0; background:#1d2029; color:var(--muted); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.03em; }
+    td { font-variant-numeric:tabular-nums; }
+    tr:last-child td { border-bottom:none; }
+    .pill { display:inline-block; padding:2px 9px; border-radius:20px; font-size:.76rem; font-weight:600; }
+    .ev-play { background:rgba(232,176,75,.15); color:var(--accent); }
+    .ev-completed { background:rgba(96,196,128,.15); color:#6fd093; }
+    .ev-opened { background:rgba(120,150,220,.15); color:#93aee8; }
+    .ev-left { background:rgba(255,255,255,.07); color:var(--muted); }
+    .muted { color:var(--muted); }
+    .empty { padding:30px; text-align:center; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <!-- ====== SETTING: paste the same Web App URL you put in player.js ====== -->
+  <script>const API_URL = "";</script>
+
+  <div class="wrap">
+    <section class="login" id="login">
+      <h1>Listener report</h1>
+      <div class="sub">Enter the admin password you set in the Apps Script.</div>
+      <form id="loginForm">
+        <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password">
+        <button class="primary" type="submit">Open report</button>
+      </form>
+      <div class="err" id="loginErr"></div>
+    </section>
+
+    <section id="report" hidden>
+      <header>
+        <div>
+          <h1>Listener report</h1>
+          <div class="sub" id="updated"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="refresh">Refresh</button>
+          <button id="csv">Export CSV</button>
+          <button id="logout">Log out</button>
+        </div>
+      </header>
+
+      <div class="cards">
+        <div class="card"><div class="label">Total plays</div><div class="value" id="kPlays">0</div></div>
+        <div class="card"><div class="label">Unique listeners</div><div class="value" id="kPeople">0</div></div>
+        <div class="card"><div class="label">Finished listening</div><div class="value" id="kDone">0</div></div>
+        <div class="card"><div class="label">Total listening time</div><div class="value" id="kTime">0m</div></div>
+        <div class="card"><div class="label">Opened, never played</div><div class="value" id="kNoPlay">0</div></div>
+      </div>
+
+      <h2>By listener</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Plays</th><th>Finished</th><th>Listened</th><th>Devices</th><th>First seen</th><th>Last played</th></tr></thead>
+          <tbody id="people"></tbody>
+        </table>
+      </div>
+
+      <div class="tools">
+        <h2>Full activity log</h2>
+        <input type="search" id="search" placeholder="Search name, device, browser…">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Name</th><th>Event</th><th>Play #</th><th>Listened</th><th>Device</th><th>OS</th><th>Browser</th><th>Screen</th><th>Timezone</th></tr></thead>
+          <tbody id="log"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const ss = {
+    get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  let rows = [];
+
+  const fmtTime = (iso) => {
+    const d = new Date(iso);
+    return isNaN(d) ? String(iso || "") : d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  };
+  const fmtDur = (s) => {
+    s = Math.round(Number(s) || 0);
+    if (s < 60) return s + "s";
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h ? h + "h " + m + "m" : m + "m " + (s % 60) + "s";
+  };
+  // Build cells with textContent so names typed by visitors can never inject HTML
+  function cell(tr, text, cls) {
+    const td = document.createElement("td");
+    td.textContent = text == null ? "" : String(text);
+    if (cls) td.className = cls;
+    tr.appendChild(td);
+    return td;
+  }
+  function pill(tr, ev) {
+    const td = document.createElement("td");
+    const s = document.createElement("span");
+    s.className = "pill ev-" + ev;
+    s.textContent = ev;
+    td.appendChild(s);
+    tr.appendChild(td);
+  }
+  const personKey = (r) => String(r.name || "(no name)").trim().toLowerCase();
+
+  async function fetchData(pw) {
+    if (!API_URL) throw new Error("Paste your Apps Script URL into API_URL at the top of admin.html.");
+    const res = await fetch(API_URL + "?key=" + encodeURIComponent(pw), { cache: "no-store" });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Could not load data");
+    return data.rows || [];
+  }
+
+  function render() {
+    // listen time: for each (session, play #) keep the largest "seconds" value reported
+    const perPlay = new Map();
+    rows.forEach((r) => {
+      if (r.event !== "completed" && r.event !== "left") return;
+      const k = r.sessionId + "|" + r.playNumber;
+      perPlay.set(k, Math.max(perPlay.get(k) || 0, Number(r.seconds) || 0));
+    });
+    const playSeconds = (sessionId, playNumber) => perPlay.get(sessionId + "|" + playNumber) || 0;
+
+    const people = new Map();
+    const sessionsOpened = new Set(), sessionsPlayed = new Set();
+    let plays = 0, done = 0, total = 0;
+    perPlay.forEach((v) => (total += v));
+
+    rows.forEach((r) => {
+      const k = personKey(r);
+      if (!people.has(k)) people.set(k, { name: r.name || "(no name)", plays: 0, done: 0, secs: 0, devices: new Set(), first: r.time, last: "" });
+      const p = people.get(k);
+      if (r.time < p.first) p.first = r.time;
+      p.devices.add([r.device, r.os, r.browser].filter(Boolean).join(" · "));
+      if (r.event === "opened") sessionsOpened.add(r.sessionId);
+      if (r.event === "play") {
+        plays++; p.plays++; sessionsPlayed.add(r.sessionId);
+        p.secs += playSeconds(r.sessionId, r.playNumber);
+        if (r.time > p.last) p.last = r.time;
+      }
+      if (r.event === "completed") { done++; p.done++; }
+    });
+    let noPlay = 0;
+    sessionsOpened.forEach((s) => { if (!sessionsPlayed.has(s)) noPlay++; });
+
+    $("kPlays").textContent = plays;
+    $("kPeople").textContent = people.size;
+    $("kDone").textContent = done;
+    $("kTime").textContent = fmtDur(total);
+    $("kNoPlay").textContent = noPlay;
+    $("updated").textContent = "Updated " + new Date().toLocaleTimeString() + " · " + rows.length + " records";
+
+    // By listener
+    const tb = $("people");
+    tb.replaceChildren();
+    const list = [...people.values()].sort((a, b) => (b.last || b.first).localeCompare(a.last || a.first));
+    if (!list.length) { const tr = document.createElement("tr"); const td = cell(tr, "No listeners yet."); td.colSpan = 7; td.className = "empty"; tb.appendChild(tr); }
+    list.forEach((p) => {
+      const tr = document.createElement("tr");
+      cell(tr, p.name);
+      cell(tr, p.plays);
+      cell(tr, p.done);
+      cell(tr, fmtDur(p.secs));
+      cell(tr, [...p.devices].join("  |  "), "muted");
+      cell(tr, fmtTime(p.first), "muted");
+      cell(tr, p.last ? fmtTime(p.last) : "never played", p.last ? "" : "muted");
+      tb.appendChild(tr);
+    });
+
+    renderLog();
+  }
+
+  function renderLog() {
+    const q = $("search").value.trim().toLowerCase();
+    const tb = $("log");
+    tb.replaceChildren();
+    const list = rows.slice().reverse().filter((r) => !q ||
+      [r.name, r.event, r.device, r.os, r.browser, r.timezone, r.screen].join(" ").toLowerCase().includes(q));
+    if (!list.length) { const tr = document.createElement("tr"); const td = cell(tr, "Nothing to show."); td.colSpan = 10; td.className = "empty"; tb.appendChild(tr); return; }
+    list.slice(0, 2000).forEach((r) => {
+      const tr = document.createElement("tr");
+      cell(tr, fmtTime(r.time));
+      cell(tr, r.name);
+      pill(tr, String(r.event || ""));
+      cell(tr, r.playNumber);
+      cell(tr, r.seconds !== "" && r.seconds != null ? fmtDur(r.seconds) : "");
+      cell(tr, r.device);
+      cell(tr, r.os);
+      cell(tr, r.browser);
+      cell(tr, r.screen, "muted");
+      cell(tr, r.timezone, "muted");
+      tb.appendChild(tr);
+    });
+  }
+
+  function exportCsv() {
+    const cols = ["time", "name", "event", "playNumber", "seconds", "position", "duration", "device", "os", "browser", "screen", "language", "timezone", "visitorId", "sessionId", "track", "clientTime", "page", "userAgent"];
+    const esc = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+    const csv = [cols.join(",")].concat(rows.map((r) => cols.map((c) => esc(r[c])).join(","))).join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+    a.download = "listeners-" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+  }
+
+  async function open(pw) {
+    $("loginErr").textContent = "Loading…";
+    try {
+      rows = await fetchData(pw);
+      ss.set("ap_admin", pw);
+      $("login").hidden = true;
+      $("report").hidden = false;
+      $("loginErr").textContent = "";
+      render();
+    } catch (e) {
+      ss.del("ap_admin");
+      $("login").hidden = false;
+      $("report").hidden = true;
+      $("loginErr").textContent = e.message || "Could not load data";
+    }
+  }
+
+  $("loginForm").addEventListener("submit", (e) => { e.preventDefault(); open($("pw").value); });
+  $("refresh").addEventListener("click", () => { const pw = ss.get("ap_admin"); if (pw) open(pw); });
+  $("logout").addEventListener("click", () => { ss.del("ap_admin"); rows = []; $("pw").value = ""; $("report").hidden = true; $("login").hidden = false; });
+  $("csv").addEventListener("click", exportCsv);
+  $("search").addEventListener("input", renderLog);
+
+  const saved = ss.get("ap_admin");
+  if (saved) open(saved);
+})();
+</script>
+</body>
+</html>
