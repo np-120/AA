@@ -12,7 +12,7 @@ const CONFIG = {
 
   // Tracking — paste your Google Apps Script Web App URL (ends in /exec).
   // Leave "" to turn tracking off (the name popup still shows).
-  logUrl:   "",
+  logUrl:   "https://script.google.com/macros/s/AKfycbybjdcirKxK4P4m0LwJuRpCZ7YFXIyocqvXoTtySQkWiXTZyutv5zVtO0v0f4uywIX9/exec",
   askName:  true,                  // false = no popup
   rememberName: true               // true = returning visitors on the same device aren't asked again
 };
